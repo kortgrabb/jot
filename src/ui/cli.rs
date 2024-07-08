@@ -45,6 +45,7 @@ impl Cli {
         // Implementation for listing entries
     }
 
+    // parse th
     fn parse_options(&self, args: &[String]) -> (HashMap<String, String>, Vec<String>) {
         let mut options = HashMap::new();
         let mut content = Vec::new();
@@ -52,8 +53,10 @@ impl Cli {
 
         while i < args.len() {
             if args[i].starts_with("--") {
+                // skip the dashes and add the argument (--arg -> arg)
                 let key = args[i][2..].to_string();
                 i += 1;
+                // add the option and its value to the map
                 if i < args.len() {
                     options.insert(key, args[i].to_string());
                 }
