@@ -11,6 +11,7 @@ impl Cli {
         if args.is_empty() {
             println!("Error: No command provided");
             println!("Usage: jot <command> [options] [arguments]");
+            println!("Commands: add, remove, list");
             return;
         }
 
@@ -25,14 +26,15 @@ impl Cli {
     fn add_entry(&mut self, args: &[String]) {
         let (options, content) = self.parse_options(args);
         
-        let date = options.get("date").cloned().unwrap_or_else(|| "today".to_string());
-        let mood = options.get("mood").cloned().unwrap_or_else(|| "neutral".to_string());
+        let date = options.get("date").map(String::as_str).unwrap_or("today");
+        let mood = options.get("mood").map(String::as_str).unwrap_or("neutral");
 
         println!(
             "Adding entry: content={:?}, date={}, mood={}",
             content, date, mood
         );
 
+        // Here you would actually add the entry to your journal
     }
 
     fn remove_entry(&mut self, args: &[String]) {
@@ -45,23 +47,20 @@ impl Cli {
         // Implementation for listing entries
     }
 
-    // parse th
-    fn parse_options(&self, args: &[String]) -> (HashMap<String, String>, Vec<String>) {
+    fn parse_options<'a>(&self, args: &'a [String]) -> (HashMap<String, String>, Vec<&'a str>) {
         let mut options = HashMap::new();
         let mut content = Vec::new();
         let mut i = 0;
 
         while i < args.len() {
             if args[i].starts_with("--") {
-                // skip the dashes and add the argument (--arg -> arg)
-                let key = args[i][2..].to_string();
+                let key = &args[i][2..];
                 i += 1;
-                // add the option and its value to the map
                 if i < args.len() {
-                    options.insert(key, args[i].to_string());
+                    options.insert(key.to_string(), args[i].to_string());
                 }
             } else {
-                content.push(args[i].clone());
+                content.push(args[i].as_str());
             }
             i += 1;
         }
