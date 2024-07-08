@@ -1,6 +1,8 @@
 use jot::ui::cli::Cli;
+use std::env;
 
 fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
     let mut cli = Cli::new();
-    cli.run();
+    cli.run(&args);
 }
