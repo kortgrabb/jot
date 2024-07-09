@@ -32,14 +32,19 @@ impl Cli {
         
         let date = options.get("date").map(String::as_str).unwrap_or("today");
         let mood = options.get("mood").map(String::as_str).unwrap_or("neutral");
-
+        
+        let content_joined = content.join(" ").to_string();
+        #[cfg(debug_assertions)]
         println!(
-            "Adding entry: content={:?}, date={}, mood={}",
-            content, date, mood
+            "Adding entry: content={}, date={}, mood={}",
+            content_joined, date, mood
         );
 
-        let entry = Entry::new(content.join(" ").to_string(), vec![]);
-        self.jrnl.add_entry(entry);
+        let entry = Entry::new(content_joined, vec![]);
+        match self.jrnl.add_entry(entry) {
+           Ok(_) => println!("added sucess"),
+           Err(e) => println!("error adding: {}", e), 
+        }
     }
 
     fn remove_entry(&mut self, args: &[String]) {
@@ -54,6 +59,8 @@ impl Cli {
         let start_date = options.get("start").map(String::as_str).unwrap_or("today");
 
         println!("listing from {}", start_date);
+
+        self.jrnl.list_entries().unwrap();
     }
 
     fn parse_options<'a>(&self, args: &'a [String]) -> (HashMap<String, String>, Vec<&'a str>) {

@@ -15,6 +15,16 @@ impl Journal {
         self.entries.push(entry);
 
         Ok(())
+    }
+
+    pub fn list_entries(&mut self) -> Result<(), Error> {
+
+        println!("entries:");
+        for (id, entry) in self.entries.iter().enumerate() {
+            println!("entry {}: {}", id, entry.content);
+        }
+
+        Ok(())
     } 
 }
 
