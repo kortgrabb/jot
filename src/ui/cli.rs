@@ -1,10 +1,14 @@
 use std::collections::HashMap;
 
-pub struct Cli;
+use crate::{api::journal_api::{self, JournalAPI}, core::{entry::Entry, journal::Journal}};
+
+pub struct Cli {
+    jrnl: Journal
+}
 
 impl Cli {
     pub fn new() -> Cli {
-        Cli
+        Cli { jrnl: Journal::new() }
     }
 
     pub fn run(&mut self, args: &[String]) {
@@ -16,7 +20,7 @@ impl Cli {
         }
 
         match args[0].as_str() {
-            "add" => self.add_entry(&args[1..]),
+            "write" => self.add_entry(&args[1..]),
             "remove" => self.remove_entry(&args[1..]),
             "list" => self.list_entries(&args[1..]),
             _ => println!("Error: Unknown command: {}", args[0]),
@@ -34,7 +38,8 @@ impl Cli {
             content, date, mood
         );
 
-        // Here you would actually add the entry to your journal
+        let entry = Entry::new(content.join(" ").to_string(), vec![]);
+        self.jrnl.add_entry(entry);
     }
 
     fn remove_entry(&mut self, args: &[String]) {
@@ -44,7 +49,11 @@ impl Cli {
 
     fn list_entries(&mut self, args: &[String]) {
         println!("Listing entries with args: {:?}", args);
-        // Implementation for listing entries
+        let (options, _) = self.parse_options(args);
+
+        let start_date = options.get("start").map(String::as_str).unwrap_or("today");
+
+        println!("listing from {}", start_date);
     }
 
     fn parse_options<'a>(&self, args: &'a [String]) -> (HashMap<String, String>, Vec<&'a str>) {
