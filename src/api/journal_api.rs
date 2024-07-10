@@ -12,7 +12,6 @@ impl JournalAPI {
     }
 
     pub fn add_entry(&mut self, entry: Entry) -> Result<(), Error> {
-        // TODO Validate the content
         self.journal.add_entry(entry)
     }
 }

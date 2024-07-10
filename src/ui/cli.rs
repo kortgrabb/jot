@@ -1,14 +1,25 @@
 use std::collections::HashMap;
 
-use crate::{api::journal_api::{self, JournalAPI}, core::{entry::Entry, journal::Journal}};
+use crate::{
+    api::journal_api::{self, JournalAPI},
+    core::{entry::Entry, journal::Journal},
+};
 
 pub struct Cli {
-    jrnl: Journal
+    jrnl: Journal,
+}
+
+impl Default for Cli {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Cli {
     pub fn new() -> Cli {
-        Cli { jrnl: Journal::new() }
+        Cli {
+            jrnl: Journal::new(),
+        }
     }
 
     pub fn run(&mut self, args: &[String]) {
@@ -18,6 +29,8 @@ impl Cli {
             println!("Commands: add, remove, list");
             return;
         }
+
+        self.jrnl.load_entries().unwrap();
 
         match args[0].as_str() {
             "write" => self.add_entry(&args[1..]),
@@ -29,10 +42,10 @@ impl Cli {
 
     fn add_entry(&mut self, args: &[String]) {
         let (options, content) = self.parse_options(args);
-        
+
         let date = options.get("date").map(String::as_str).unwrap_or("today");
         let mood = options.get("mood").map(String::as_str).unwrap_or("neutral");
-        
+
         let content_joined = content.join(" ").to_string();
         #[cfg(debug_assertions)]
         println!(
@@ -40,10 +53,10 @@ impl Cli {
             content_joined, date, mood
         );
 
-        let entry = Entry::new(content_joined, vec![]);
+        let entry = Entry::new(content_joined, vec![], self.jrnl.entry_size());
         match self.jrnl.add_entry(entry) {
-           Ok(_) => println!("added sucess"),
-           Err(e) => println!("error adding: {}", e), 
+            Ok(_) => println!("added sucess"),
+            Err(e) => println!("error adding: {}", e),
         }
     }
 
@@ -56,10 +69,9 @@ impl Cli {
         println!("Listing entries with args: {:?}", args);
         let (options, _) = self.parse_options(args);
 
-        let start_date = options.get("start").map(String::as_str).unwrap_or("today");
+        let end_date = options.get("start").map(String::as_str).unwrap_or("today");
 
-        println!("listing from {}", start_date);
-
+        println!("listing entries from start to {}", end_date);
         self.jrnl.list_entries().unwrap();
     }
 
