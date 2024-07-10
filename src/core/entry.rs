@@ -4,16 +4,25 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Entry {
     id: usize,
+
     #[serde(default)]
     pub date: chrono::NaiveDate,
     pub content: String,
+
+    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mood: Option<String>,
+
     pub tags: Vec<String>,
+
+    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub location: Option<String>,
+
+    #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weather: Option<String>,
+
     pub last_edited: chrono::DateTime<chrono::Utc>,
 }
 
