@@ -1,10 +1,11 @@
 use std::{
     fs::File,
     io::{Error, Write},
-    path::Path,
 };
 
 use serde::{Deserialize, Serialize};
+
+use crate::utils::helpers;
 
 use super::{config::Config, entry::Entry};
 
@@ -32,20 +33,40 @@ impl Journal {
         self.entries.len()
     }
 
+    pub fn get_entry(&self, id: usize) -> Option<&Entry> {
+        self.entries.get(id)
+    }
+
     pub fn add_entry(&mut self, entry: Entry) -> Result<(), Error> {
         self.entries.push(entry);
-
         self.save_json()?;
+
         Ok(())
     }
 
-    pub fn list_entries(&mut self) -> Result<(), Error> {
-        println!("entries:");
-        for (id, entry) in self.entries.iter().enumerate() {
-            println!("entry {}: {}", id, entry.content);
+    pub fn remove_entry(&mut self, id: usize) -> Result<(), Error> {
+        if id >= self.entries.len() {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Entry with id {} not found", id),
+            ));
         }
 
+        self.entries.remove(id);
+        self.save_json()?;
+
         Ok(())
+    }
+
+    pub fn list_entries(&mut self, start_date: &str, end_date: &str) {
+        let start = helpers::parse_date(start_date);
+        let end = helpers::parse_date(end_date);
+
+        for entry in &self.entries {
+            if entry.date >= start && entry.date <= end {
+                println!("{}", entry.content);
+            }
+        }
     }
 
     fn to_json(&self) -> Result<String, serde_json::Error> {
@@ -60,7 +81,7 @@ impl Journal {
         let json = self
             .to_json()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-        let mut file = File::create(&self.cfg.save_path)?; // TODO: Add path to a config
+        let mut file = File::create(&self.cfg.save_path)?;
 
         file.write_all(json.as_bytes())?;
 

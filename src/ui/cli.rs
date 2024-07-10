@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::{
-    api::journal_api::{self, JournalAPI},
-    core::{entry::Entry, journal::Journal},
+    core::commands::{get_command, Command},
+    core::journal::Journal,
 };
 
 pub struct Cli {
@@ -26,73 +24,15 @@ impl Cli {
         if args.is_empty() {
             println!("Error: No command provided");
             println!("Usage: jot <command> [options] [arguments]");
-            println!("Commands: add, remove, list");
+            println!("Commands: write, remove, list");
             return;
         }
 
         self.jrnl.load_entries().unwrap();
 
-        match args[0].as_str() {
-            "write" => self.add_entry(&args[1..]),
-            "remove" => self.remove_entry(&args[1..]),
-            "list" => self.list_entries(&args[1..]),
-            _ => println!("Error: Unknown command: {}", args[0]),
+        match get_command(&args[0]) {
+            Some(command) => command.execute(&mut self.jrnl, &args[1..]),
+            None => println!("Error: Unknown command: {}", args[0]),
         }
-    }
-
-    fn add_entry(&mut self, args: &[String]) {
-        let (options, content) = self.parse_options(args);
-
-        let date = options.get("date").map(String::as_str).unwrap_or("today");
-        let mood = options.get("mood").map(String::as_str).unwrap_or("neutral");
-
-        let content_joined = content.join(" ").to_string();
-        #[cfg(debug_assertions)]
-        println!(
-            "Adding entry: content={}, date={}, mood={}",
-            content_joined, date, mood
-        );
-
-        let entry = Entry::new(content_joined, vec![], self.jrnl.entry_size());
-        match self.jrnl.add_entry(entry) {
-            Ok(_) => println!("added sucess"),
-            Err(e) => println!("error adding: {}", e),
-        }
-    }
-
-    fn remove_entry(&mut self, args: &[String]) {
-        println!("Removing entry: {:?}", args);
-        // Implementation for removing an entry
-    }
-
-    fn list_entries(&mut self, args: &[String]) {
-        println!("Listing entries with args: {:?}", args);
-        let (options, _) = self.parse_options(args);
-
-        let end_date = options.get("start").map(String::as_str).unwrap_or("today");
-
-        println!("listing entries from start to {}", end_date);
-        self.jrnl.list_entries().unwrap();
-    }
-
-    fn parse_options<'a>(&self, args: &'a [String]) -> (HashMap<String, String>, Vec<&'a str>) {
-        let mut options = HashMap::new();
-        let mut content = Vec::new();
-        let mut i = 0;
-
-        while i < args.len() {
-            if args[i].starts_with("--") {
-                let key = &args[i][2..];
-                i += 1;
-                if i < args.len() {
-                    options.insert(key.to_string(), args[i].to_string());
-                }
-            } else {
-                content.push(args[i].as_str());
-            }
-            i += 1;
-        }
-
-        (options, content)
     }
 }
