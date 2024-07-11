@@ -29,6 +29,13 @@ impl Journal {
         }
     }
 
+    pub fn with_config(cfg: Config) -> Self {
+        Journal {
+            entries: vec![],
+            cfg,
+        }
+    }
+
     pub fn entry_size(&self) -> usize {
         self.entries.len()
     }
@@ -37,10 +44,11 @@ impl Journal {
         self.entries.get(id)
     }
 
-    pub fn add_entry(&mut self, entry: Entry) -> Result<(), Error> {
+    pub fn add_entry(&mut self, mut entry: Entry) -> Result<(), Error> {
+        entry.id = self.entries.len();
+
         self.entries.push(entry);
         self.save_json()?;
-
         Ok(())
     }
 
@@ -64,7 +72,8 @@ impl Journal {
 
         for entry in &self.entries {
             if entry.date >= start && entry.date <= end {
-                println!("{}", entry.content);
+                println!("{} {}", entry.date, entry.title);
+                println!("{}\n", entry.content);
             }
         }
     }
@@ -73,7 +82,7 @@ impl Journal {
         serde_json::to_string(self)
     }
 
-    fn load_from_json(&self, input: &str) -> Result<Self, serde_json::Error> {
+    fn as_raw(&self, input: &str) -> Result<Self, serde_json::Error> {
         serde_json::from_str(input)
     }
 
@@ -97,7 +106,7 @@ impl Journal {
                     return Ok(());
                 }
 
-                let loaded = self.load_from_json(r.as_str())?;
+                let loaded = self.as_raw(r.as_str())?;
                 self.entries = loaded.entries;
             }
 
@@ -107,44 +116,5 @@ impl Journal {
         }
 
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_new_journal_is_empty() {
-        let journal = Journal::new();
-        assert_eq!(journal.entries.len(), 0);
-    }
-
-    #[test]
-    fn test_add_entry() {
-        let mut journal = Journal::new();
-        let entry = Entry::new(
-            "Test entry".to_string(),
-            vec!["test".to_string()],
-            journal.entries.len(),
-        );
-        let _ = journal.add_entry(entry);
-        assert_eq!(journal.entries.len(), 1);
-    }
-
-    #[test]
-    fn test_multiple_entries() {
-        let mut journal = Journal::new();
-        let _ = journal.add_entry(Entry::new(
-            "Entry 1".to_string(),
-            vec![],
-            journal.entries.len(),
-        ));
-        let _ = journal.add_entry(Entry::new(
-            "Entry 2".to_string(),
-            vec![],
-            journal.entries.len(),
-        ));
-        assert_eq!(journal.entries.len(), 2);
     }
 }

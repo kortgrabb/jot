@@ -1,3 +1,4 @@
+use crate::core::entry::EntryBuilder;
 use crate::{
     core::{entry::Entry, journal::Journal, parser::parse_options},
     utils::helpers,
@@ -16,22 +17,14 @@ impl Command for AddEntry {
     fn execute(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, content) = parse_options(args);
         let content = content.join(" ");
-        let mut entry = Entry::new(content, Vec::new(), jrnl.entry_size());
 
-        let defaults: HashMap<&str, Option<&str>> = [
-            ("date", Some("today")),
-            ("mood", None),
-            ("weather", None),
-            ("location", None),
-        ]
-        .iter()
-        .cloned()
-        .collect();
-
-        for (key, default_value) in defaults {
-            let value = options.get(key).map(String::as_str).or(default_value);
-            set_entry_property(&mut entry, key, value);
-        }
+        let entry = EntryBuilder::default()
+            .content(content)
+            .mood(options.get("mood").map(|mood| mood.to_string()))
+            .weather(options.get("weather").map(|weather| weather.to_string()))
+            .location(options.get("location").map(|location| location.to_string()))
+            .build()
+            .unwrap();
 
         match jrnl.add_entry(entry) {
             Ok(_) => println!("Entry added successfully"),
@@ -63,10 +56,10 @@ impl Command for ListEntries {
 fn set_entry_property(entry: &mut Entry, key: &str, value: Option<&str>) {
     if let Some(value) = value.filter(|&v| !v.is_empty()) {
         match key {
-            "date" => entry.set_date(helpers::parse_date(value)),
-            "mood" => entry.set_mood(value),
-            "weather" => entry.set_weather(value),
-            "location" => entry.set_location(value),
+            "date" => entry.date = helpers::parse_date(value),
+            "mood" => entry.mood = Some(value.to_string()),
+            "weather" => entry.weather = Some(value.to_string()),
+            "location" => entry.location = Some(value.to_string()),
             _ => eprintln!("Unknown option: {}", key),
         }
     }
@@ -75,7 +68,7 @@ fn set_entry_property(entry: &mut Entry, key: &str, value: Option<&str>) {
 pub fn get_command(command: &str) -> Option<Box<dyn Command>> {
     // TODO: Reduce "parse_options" calls by moving it to "get_command"\
     match command {
-        "add" => Some(Box::new(AddEntry)),
+        "write" => Some(Box::new(AddEntry)),
         "remove" => Some(Box::new(RemoveEntry)),
         "list" => Some(Box::new(ListEntries)),
         _ => {
