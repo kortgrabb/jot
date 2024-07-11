@@ -1,79 +1,106 @@
 use crate::core::entry::EntryBuilder;
-use crate::{
-    core::{entry::Entry, journal::Journal, parser::parse_options},
-    utils::helpers,
-};
+use crate::core::journal::Journal;
 use std::collections::HashMap;
+use std::str::FromStr;
 
-pub trait Command {
-    fn execute(&self, jrnl: &mut Journal, args: &[String]);
+#[derive(Debug)]
+pub enum Command {
+    Write,
+    Remove,
+    List,
 }
 
-pub struct AddEntry;
-pub struct RemoveEntry;
-pub struct ListEntries;
+impl FromStr for Command {
+    type Err = String;
 
-impl Command for AddEntry {
-    fn execute(&self, jrnl: &mut Journal, args: &[String]) {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "write" => Ok(Command::Write),
+            "remove" => Ok(Command::Remove),
+            "list" => Ok(Command::List),
+            _ => Err(format!("Unknown command: {}", s)),
+        }
+    }
+}
+
+impl Command {
+    pub fn execute(&self, jrnl: &mut Journal, args: &[String]) {
+        match self {
+            Command::Write => self.add_entry(jrnl, args),
+            Command::Remove => self.remove_entry(jrnl, args),
+            Command::List => self.list_entries(jrnl, args),
+        }
+    }
+
+    fn add_entry(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, content) = parse_options(args);
         let content = content.join(" ");
 
         let entry = EntryBuilder::default()
             .content(content)
-            .mood(options.get("mood").map(|mood| mood.to_string()))
-            .weather(options.get("weather").map(|weather| weather.to_string()))
-            .location(options.get("location").map(|location| location.to_string()))
+            .mood(options.get("mood").cloned())
+            .weather(options.get("weather").cloned())
+            .location(options.get("location").cloned())
             .build()
-            .unwrap();
+            .unwrap_or_else(|e| {
+                eprintln!("Error building entry: {}", e);
+                std::process::exit(1);
+            });
 
         match jrnl.add_entry(entry) {
             Ok(_) => println!("Entry added successfully"),
             Err(e) => eprintln!("Error adding entry: {}", e),
         }
     }
-}
 
-impl Command for RemoveEntry {
-    fn execute(&self, jrnl: &mut Journal, args: &[String]) {
-        let _ = jrnl;
+    fn remove_entry(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, _) = parse_options(args);
-        println!("Removing entry with options: {:?}", options);
-    }
-}
 
-impl Command for ListEntries {
-    fn execute(&self, jrnl: &mut Journal, args: &[String]) {
+        if let Some(id_string) = options.get("id") {
+            match id_string.parse::<usize>() {
+                Ok(id) => match jrnl.remove_entry(id) {
+                    Ok(_) => println!("Entry removed successfully"),
+                    Err(e) => eprintln!("Error removing entry: {}", e),
+                },
+                Err(_) => eprintln!("Invalid entry ID"),
+            }
+        } else {
+            eprintln!("Please provide an entry ID to remove");
+        }
+    }
+
+    fn list_entries(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, _) = parse_options(args);
 
         let start = options.get("from").map(String::as_str).unwrap_or("start");
         let end = options.get("to").map(String::as_str).unwrap_or("today");
 
-        println!("listing entries between {} and {}", start, end);
+        println!("Listing entries between {} and {}", start, end);
         jrnl.list_entries(start, end);
     }
 }
 
-fn set_entry_property(entry: &mut Entry, key: &str, value: Option<&str>) {
-    if let Some(value) = value.filter(|&v| !v.is_empty()) {
-        match key {
-            "date" => entry.date = helpers::parse_date(value),
-            "mood" => entry.mood = Some(value.to_string()),
-            "weather" => entry.weather = Some(value.to_string()),
-            "location" => entry.location = Some(value.to_string()),
-            _ => eprintln!("Unknown option: {}", key),
-        }
-    }
+pub fn get_command(command: &str) -> Option<Command> {
+    command.parse().ok()
 }
 
-pub fn get_command(command: &str) -> Option<Box<dyn Command>> {
-    // TODO: Reduce "parse_options" calls by moving it to "get_command"\
-    match command {
-        "write" => Some(Box::new(AddEntry)),
-        "remove" => Some(Box::new(RemoveEntry)),
-        "list" => Some(Box::new(ListEntries)),
-        _ => {
-            eprintln!("Unknown command: {}", command);
-            None
+pub fn parse_options(args: &[String]) -> (HashMap<String, String>, Vec<&str>) {
+    let mut options = HashMap::new();
+    let mut content = Vec::new();
+    let mut i = 0;
+
+    while i < args.len() {
+        if args[i].starts_with("--") {
+            let key = &args[i][2..];
+            i += 1;
+            if i < args.len() {
+                options.insert(key.to_string(), args[i].to_string());
+            }
+        } else {
+            content.push(args[i].as_str());
         }
+        i += 1;
     }
+
+    (options, content)
 }

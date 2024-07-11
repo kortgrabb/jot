@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+const DEFAULT_SAVE_PATH: &str = "./save.json";
+
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     // set default for serde to ./save.json
@@ -22,5 +24,5 @@ impl Config {
 }
 
 fn default_save_path() -> String {
-    String::from("./save.json")
+    String::from(DEFAULT_SAVE_PATH)
 }
