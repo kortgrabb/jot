@@ -91,9 +91,14 @@ impl EntryBuilder {
         let written_date = Utc::now().date_naive();
 
         let title = self.title.unwrap_or_else(|| {
-            let auto_title = String::from_iter(content.chars().take_while(|c| !c.is_ascii_punctuation()));
+            let auto_title =
+                String::from_iter(content.chars().take_while(|c| !c.is_ascii_punctuation()));
             // If the auto title is the same as the content, don't set it
-            if auto_title == content { String::new() } else { auto_title }
+            if auto_title == content {
+                String::new()
+            } else {
+                auto_title
+            }
         });
 
         Ok(Entry {

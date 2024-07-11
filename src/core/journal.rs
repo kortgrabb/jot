@@ -87,9 +87,7 @@ impl Journal {
     }
 
     pub fn save_json(&self) -> Result<(), std::io::Error> {
-        let json = self
-            .to_json()
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        let json = self.to_json()?;
         let mut file = File::create(&self.cfg.save_path)?;
 
         file.write_all(json.as_bytes())?;
@@ -102,7 +100,9 @@ impl Journal {
         match raw {
             Ok(r) => {
                 if r.is_empty() {
-                    self.save_json()?;
+                    if let Err(err) = self.save_json() {
+                        eprintln!("Failed to save JSON: {}", err);
+                    }
                     return Ok(());
                 }
 
