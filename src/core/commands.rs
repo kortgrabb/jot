@@ -11,8 +11,9 @@ pub enum Command {
 }
 
 impl FromStr for Command {
+    // Make the error type a string
     type Err = String;
-
+    // Parses a string into a Command enum
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "write" => Ok(Command::Write),
@@ -36,6 +37,7 @@ impl Command {
         let (options, content) = parse_options(args);
         let content = content.join(" ");
 
+        // Build the entry
         let entry = EntryBuilder::default()
             .content(content)
             .mood(options.get("mood").cloned())
@@ -47,6 +49,7 @@ impl Command {
                 std::process::exit(1);
             });
 
+        // Pass the built entry to the journal, where the id will be set and it will be saved
         match jrnl.add_entry(entry) {
             Ok(_) => println!("Entry added successfully"),
             Err(e) => eprintln!("Error adding entry: {}", e),
@@ -56,7 +59,9 @@ impl Command {
     fn remove_entry(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, _) = parse_options(args);
 
+        // Get the id in string form
         if let Some(id_string) = options.get("id") {
+            // Parse the string into a usize and match it
             match id_string.parse::<usize>() {
                 Ok(id) => match jrnl.remove_entry(id) {
                     Ok(_) => println!("Entry removed successfully"),
@@ -72,6 +77,8 @@ impl Command {
     fn list_entries(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, _) = parse_options(args);
 
+        // Get the starting and ending dates from the options,
+        // Defaulting to "start" and "today"
         let start = options.get("from").map(String::as_str).unwrap_or("start");
         let end = options.get("to").map(String::as_str).unwrap_or("today");
 
@@ -80,10 +87,13 @@ impl Command {
     }
 }
 
-pub fn get_command(command: &str) -> Option<Command> {
-    command.parse().ok()
+// Parses a string into a Command enum
+pub fn get_command(command: &str) -> Result<Command, String> {
+    Command::from_str(command)
 }
 
+// Parses a list of strings (arguments) into a hashmap of options and a vector of content
+// Is split on "--"
 pub fn parse_options(args: &[String]) -> (HashMap<String, String>, Vec<&str>) {
     let mut options = HashMap::new();
     let mut content = Vec::new();

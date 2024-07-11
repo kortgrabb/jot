@@ -20,19 +20,19 @@ impl Cli {
         }
     }
 
-    pub fn run(&mut self, args: &[String]) {
+    // Parse the command and execute it
+    pub fn run(&mut self, args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         if args.is_empty() {
             println!("Error: No command provided");
-            println!("Usage: jot <command> [options] [arguments]");
+            println!("Usage: jot <command> [args]");
             println!("Commands: write, remove, list");
-            return;
+            return Ok(());
         }
 
-        self.jrnl.load_entries().unwrap();
+        self.jrnl.load_entries()?;
+        let command = get_command(&args[0])?;
+        command.execute(&mut self.jrnl, &args[1..]);
 
-        match get_command(&args[0]) {
-            Some(command) => command.execute(&mut self.jrnl, &args[1..]),
-            None => println!("Error: Unknown command: {}", args[0]),
-        }
+        Ok(())
     }
 }

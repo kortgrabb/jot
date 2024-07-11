@@ -1,6 +1,5 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, Local, NaiveDate};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Entry {
@@ -20,8 +19,8 @@ pub struct Entry {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub weather: Option<String>,
-    #[serde(default = "Utc::now")]
-    pub last_edited: DateTime<Utc>,
+    #[serde(default = "Local::now")]
+    pub last_edited: DateTime<Local>,
 }
 
 impl Entry {
@@ -30,7 +29,7 @@ impl Entry {
     }
 
     pub fn update_last_edited(&mut self) {
-        self.last_edited = Utc::now();
+        self.last_edited = Local::now();
     }
 }
 
@@ -87,8 +86,7 @@ impl EntryBuilder {
     }
     pub fn build(self) -> Result<Entry, &'static str> {
         let content = self.content.ok_or("Content is required")?;
-
-        let written_date = Utc::now().date_naive();
+        let written_date = Local::now().date_naive();
 
         let title = self.title.unwrap_or_else(|| {
             let auto_title =
@@ -101,17 +99,23 @@ impl EntryBuilder {
             }
         });
 
+        // Extract tags from the content
+        let content_tags: Vec<String> = content
+            .split_whitespace()
+            .filter(|w| w.starts_with("@") && w.len() > 1)
+            .map(|w| w.to_string())
+            .collect();
+
         Ok(Entry {
             id: 0, // This is set by the journal when adding the entry
             date: written_date,
             title,
             content,
             mood: self.mood,
-            // TODO: add tag support
-            tags: vec![],
+            tags: content_tags,
             location: self.location,
             weather: self.weather,
-            last_edited: Utc::now(),
+            last_edited: Local::now(),
         })
     }
 }
