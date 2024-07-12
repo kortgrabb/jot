@@ -8,6 +8,7 @@ pub enum Command {
     Write,
     Remove,
     List,
+    ListTags,
 }
 
 impl FromStr for Command {
@@ -19,6 +20,7 @@ impl FromStr for Command {
             "write" => Ok(Command::Write),
             "remove" => Ok(Command::Remove),
             "list" => Ok(Command::List),
+            "tags" => Ok(Command::ListTags),
             _ => Err(format!("Unknown command: {}", s)),
         }
     }
@@ -30,6 +32,7 @@ impl Command {
             Command::Write => self.add_entry(jrnl, args),
             Command::Remove => self.remove_entry(jrnl, args),
             Command::List => self.list_entries(jrnl, args),
+            Command::ListTags => self.list_used_tags(jrnl),
         }
     }
 
@@ -84,6 +87,13 @@ impl Command {
 
         println!("Listing entries between {} and {}", start, end);
         jrnl.list_entries(start, end);
+    }
+
+    fn list_used_tags(&self, jrnl: &mut Journal) {
+        // Cache the tags
+        jrnl.update_unique_tags();
+        println!("Unique tags used in entries:");
+        jrnl.list_unique_tags();
     }
 }
 

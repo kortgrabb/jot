@@ -103,7 +103,7 @@ impl EntryBuilder {
         let content_tags: Vec<String> = content
             .split_whitespace()
             .filter(|w| w.starts_with("@") && w.len() > 1)
-            .map(|w| w.to_string())
+            .map(|w| w.trim_start_matches("@").to_string())
             .collect();
 
         Ok(Entry {

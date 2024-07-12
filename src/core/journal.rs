@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::{
     fs::File,
     io::{Error, Write},
@@ -13,6 +14,7 @@ use super::{config::Config, entry::Entry};
 pub struct Journal {
     entries: Vec<Entry>,
     cfg: Config,
+    unique_tags: Option<HashMap<String, u32>>,
 }
 
 impl Default for Journal {
@@ -26,6 +28,7 @@ impl Journal {
         Journal {
             entries: vec![],
             cfg: Config::default(),
+            unique_tags: None,
         }
     }
 
@@ -33,11 +36,51 @@ impl Journal {
         Journal {
             entries: vec![],
             cfg,
+            unique_tags: None,
         }
     }
 
     pub fn entry_size(&self) -> usize {
         self.entries.len()
+    }
+
+    pub fn load_entries(&mut self) -> Result<(), std::io::Error> {
+        let raw = std::fs::read_to_string(&self.cfg.save_path)?;
+        if raw.is_empty() {
+            // Optionally initialize unique_tags here if desired
+            self.save_json()?;
+            return Ok(());
+        }
+
+        let loaded: Journal = serde_json::from_str(&raw)?;
+        self.entries = loaded.entries;
+        self.unique_tags = loaded.unique_tags;
+
+        Ok(())
+    }
+
+    pub fn tags_field_present(&self) -> bool {
+        self.unique_tags.is_some()
+    }
+
+    pub fn update_unique_tags(&mut self) {
+        let mut tag_map: HashMap<String, u32> = HashMap::new();
+        for entry in &self.entries {
+            for tag in &entry.tags {
+                *tag_map.entry(tag.clone()).or_insert(0) += 1;
+            }
+        }
+        self.unique_tags = Some(tag_map);
+    }
+
+    pub fn list_unique_tags(&mut self) {
+        if let Some(tags) = &self.unique_tags {
+            for (tag, count) in tags {
+                println!("@{}: {}", tag, count);
+            }
+        }
+
+        self.save_json().unwrap();
     }
 
     pub fn get_entry(&self, id: usize) -> Option<&Entry> {
@@ -82,38 +125,15 @@ impl Journal {
         serde_json::to_string(self)
     }
 
-    fn as_raw(&self, input: &str) -> Result<Self, serde_json::Error> {
-        serde_json::from_str(input)
-    }
+    // fn as_raw(&self, input: &str) -> Result<Self, serde_json::Error> {
+    //     serde_json::from_str(input)
+    // }
 
-    pub fn save_json(&self) -> Result<(), std::io::Error> {
+    pub fn save_json(&mut self) -> Result<(), std::io::Error> {
         let json = self.to_json()?;
         let mut file = File::create(&self.cfg.save_path)?;
 
         file.write_all(json.as_bytes())?;
-
-        Ok(())
-    }
-
-    pub fn load_entries(&mut self) -> Result<(), std::io::Error> {
-        let raw = std::fs::read_to_string(&self.cfg.save_path);
-        match raw {
-            Ok(r) => {
-                if r.is_empty() {
-                    if let Err(err) = self.save_json() {
-                        eprintln!("Failed to save JSON: {}", err);
-                    }
-                    return Ok(());
-                }
-
-                let loaded = self.as_raw(r.as_str())?;
-                self.entries = loaded.entries;
-            }
-
-            Err(_) => {
-                self.save_json()?;
-            }
-        }
 
         Ok(())
     }
