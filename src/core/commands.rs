@@ -90,7 +90,6 @@ impl Command {
     }
 
     fn list_used_tags(&self, jrnl: &mut Journal) {
-        // Cache the tags
         jrnl.update_unique_tags();
         println!("Unique tags used in entries:");
         jrnl.list_unique_tags();

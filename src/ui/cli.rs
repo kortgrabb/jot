@@ -1,7 +1,4 @@
-use crate::{
-    core::commands::{get_command, Command},
-    core::journal::Journal,
-};
+use crate::{core::commands::get_command, core::journal::Journal};
 
 pub struct Cli {
     jrnl: Journal,
