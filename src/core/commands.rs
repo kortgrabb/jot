@@ -34,9 +34,6 @@ impl Command {
             Command::List => self.list_entries(jrnl, args),
             Command::ListTags => self.list_used_tags(jrnl),
         }
-
-        // Save the journal after each command
-        jrnl.save_manager.save_json(&jrnl).expect("Failed to save journal");
     }
 
     fn add_entry(&self, jrnl: &mut Journal, args: &[String]) {

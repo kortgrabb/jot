@@ -30,9 +30,15 @@ impl Cli {
             println!("Error loading entries: {}", err);
             return Ok(());
         }
-        
+
         let command = get_command(&args[0])?;
         command.execute(&mut self.jrnl, &args[1..]);
+
+        // Save the journal before exiting
+        self.jrnl
+            .save_manager
+            .save_json(&self.jrnl)
+            .expect("Failed to save journal");
 
         Ok(())
     }
