@@ -1,11 +1,9 @@
 use std::collections::HashMap;
-use std::
-    io::Error
-;
+use std::io::Error;
 
-use serde::{Deserialize, Serialize};
 use crate::core::savemanager::SaveManager;
 use crate::utils::helpers;
+use serde::{Deserialize, Serialize};
 
 use super::{config::Config, entry::Entry};
 
@@ -52,7 +50,9 @@ impl Journal {
         let raw = match std::fs::read_to_string(&self.cfg.save_path) {
             Ok(raw) => raw,
             Err(_) => {
-                self.save_manager.save_json(&self).expect("Failed to save journal");
+                self.save_manager
+                    .save_json(&self)
+                    .expect("Failed to save journal");
                 return Ok(());
             }
         };
@@ -79,13 +79,12 @@ impl Journal {
     }
 
     pub fn list_unique_tags(&mut self) {
+        self.update_unique_tags();
         if let Some(tags) = &self.unique_tags {
             for (tag, count) in tags {
                 println!("@{}: {}", tag, count);
             }
         }
-
-        self.update_unique_tags();
     }
 
     pub fn get_entry(&self, id: usize) -> Option<&Entry> {
