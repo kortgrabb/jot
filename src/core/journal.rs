@@ -1,11 +1,10 @@
 use std::collections::HashMap;
-use std::{
-    fs::File,
-    io::{Error, Write},
-};
+use std::
+    io::Error
+;
 
 use serde::{Deserialize, Serialize};
-
+use crate::core::savemanager::SaveManager;
 use crate::utils::helpers;
 
 use super::{config::Config, entry::Entry};
@@ -15,6 +14,9 @@ pub struct Journal {
     entries: Vec<Entry>,
     cfg: Config,
     unique_tags: Option<HashMap<String, u32>>,
+
+    #[serde(skip)]
+    pub save_manager: SaveManager,
 }
 
 impl Default for Journal {
@@ -29,14 +31,16 @@ impl Journal {
             entries: vec![],
             cfg: Config::default(),
             unique_tags: None,
+            save_manager: SaveManager::default(),
         }
     }
 
     pub fn with_config(cfg: Config) -> Self {
         Journal {
             entries: vec![],
-            cfg,
+            cfg: cfg.clone(),
             unique_tags: None,
+            save_manager: SaveManager::new(cfg),
         }
     }
 
@@ -45,12 +49,13 @@ impl Journal {
     }
 
     pub fn load_entries(&mut self) -> Result<(), std::io::Error> {
-        let raw = std::fs::read_to_string(&self.cfg.save_path)?;
-        if raw.is_empty() {
-            // Optionally initialize unique_tags here if desired
-            self.save_json()?;
-            return Ok(());
-        }
+        let raw = match std::fs::read_to_string(&self.cfg.save_path) {
+            Ok(raw) => raw,
+            Err(_) => {
+                self.save_manager.save_json(&self).expect("Failed to save journal");
+                return Ok(());
+            }
+        };
 
         let loaded: Journal = serde_json::from_str(&raw)?;
         self.entries = loaded.entries;
@@ -80,7 +85,7 @@ impl Journal {
             }
         }
 
-        self.save_json().unwrap();
+        self.update_unique_tags();
     }
 
     pub fn get_entry(&self, id: usize) -> Option<&Entry> {
@@ -91,7 +96,6 @@ impl Journal {
         entry.id = self.entries.len();
 
         self.entries.push(entry);
-        self.save_json()?;
         Ok(())
     }
 
@@ -104,8 +108,6 @@ impl Journal {
         }
 
         self.entries.remove(id);
-        self.save_json()?;
-
         Ok(())
     }
 
@@ -119,22 +121,5 @@ impl Journal {
                 println!("{}\n", entry.content);
             }
         }
-    }
-
-    fn to_json(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(self)
-    }
-
-    // fn as_raw(&self, input: &str) -> Result<Self, serde_json::Error> {
-    //     serde_json::from_str(input)
-    // }
-
-    pub fn save_json(&mut self) -> Result<(), std::io::Error> {
-        let json = self.to_json()?;
-        let mut file = File::create(&self.cfg.save_path)?;
-
-        file.write_all(json.as_bytes())?;
-
-        Ok(())
     }
 }

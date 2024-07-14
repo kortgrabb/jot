@@ -26,7 +26,11 @@ impl Cli {
             return Ok(());
         }
 
-        self.jrnl.load_entries()?;
+        if let Err(err) = self.jrnl.load_entries() {
+            println!("Error loading entries: {}", err);
+            return Ok(());
+        }
+        
         let command = get_command(&args[0])?;
         command.execute(&mut self.jrnl, &args[1..]);
 
