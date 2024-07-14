@@ -73,7 +73,7 @@ impl Command {
                 Err(_) => eprintln!("Invalid entry ID"),
             }
         } else {
-            eprintln!("Please provide an entry ID to remove");
+            eprintln!("Please the ID of the entry to remove");
         }
     }
 
