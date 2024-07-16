@@ -38,7 +38,7 @@ impl Journal {
             entries: vec![],
             cfg: cfg.clone(),
             unique_tags: None,
-            save_manager: SaveManager::new(cfg),
+            save_manager: SaveManager::default(),
         }
     }
 
@@ -47,7 +47,7 @@ impl Journal {
     }
 
     pub fn load_entries(&mut self) -> Result<(), std::io::Error> {
-        let raw = match std::fs::read_to_string(&self.cfg.save_path) {
+        let raw = match std::fs::read_to_string(&self.save_manager.save_path) {
             Ok(raw) => raw,
             Err(_) => {
                 self.save_manager

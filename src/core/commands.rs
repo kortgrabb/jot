@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub enum Command {
-    Write,
+    Add,
     Remove,
     List,
     ListTags,
@@ -17,7 +17,7 @@ impl FromStr for Command {
     // Parses a string into a Command enum
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "write" => Ok(Command::Write),
+            "write" => Ok(Command::Add),
             "remove" => Ok(Command::Remove),
             "list" => Ok(Command::List),
             "tags" => Ok(Command::ListTags),
@@ -29,7 +29,7 @@ impl FromStr for Command {
 impl Command {
     pub fn execute(&self, jrnl: &mut Journal, args: &[String]) {
         match self {
-            Command::Write => self.add_entry(jrnl, args),
+            Command::Add => self.add_entry(jrnl, args),
             Command::Remove => self.remove_entry(jrnl, args),
             Command::List => self.list_entries(jrnl, args),
             Command::ListTags => self.list_used_tags(jrnl),
@@ -80,8 +80,6 @@ impl Command {
     fn list_entries(&self, jrnl: &mut Journal, args: &[String]) {
         let (options, _) = parse_options(args);
 
-        // Get the starting and ending dates from the options,
-        // Defaulting to "start" and "today"
         let start = options.get("from").map(String::as_str).unwrap_or("start");
         let end = options.get("to").map(String::as_str).unwrap_or("today");
 
@@ -90,7 +88,6 @@ impl Command {
     }
 
     fn list_used_tags(&self, jrnl: &mut Journal) {
-        jrnl.update_unique_tags();
         println!("Unique tags used in entries:");
         jrnl.list_unique_tags();
     }
