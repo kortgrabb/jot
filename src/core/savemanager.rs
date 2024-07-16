@@ -53,11 +53,11 @@ fn get_save_directory() -> Result<PathBuf, Box<dyn std::error::Error>> {
 
 fn default_save_path() -> String {
     // Check if we are in debug mode
-    // #[cfg(debug_assertions)]
-    // let path = PathBuf::from("./journal.json");
+    #[cfg(debug_assertions)]
+    let path = PathBuf::from("./journal.json");
 
-    // Check if we are in release mode
-    //#[cfg(not(debug_assertions))]
+    //Check if we are in release mode
+    #[cfg(not(debug_assertions))]
     let path = {
         match get_save_directory() {
             Ok(mut path) => {
