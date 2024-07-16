@@ -1,6 +1,8 @@
 use chrono::{DateTime, Local, NaiveDate};
 use serde::{Deserialize, Serialize};
 
+const PUNCTIATION: &str = ".,!?;";
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Entry {
     pub id: usize,
@@ -90,7 +92,7 @@ impl EntryBuilder {
 
         let title = self.title.unwrap_or_else(|| {
             let auto_title =
-                String::from_iter(content.chars().take_while(|c| !c.is_ascii_punctuation()));
+                String::from_iter(content.chars().take_while(|c| !PUNCTIATION.contains(*c)));
             // If the auto title is the same as the content, don't set it
             if auto_title == content {
                 String::new()
